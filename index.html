@@ -93,10 +93,16 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
-            <label class="text-sm text-gray-500 dark:text-gray-400">Proposições (opcional)</label>
-            <input id="propMapping" placeholder="Ex: P=chover; Q=grama molhada"
-              class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm w-64 focus:outline-none focus:ring-2 focus:ring-gray-600" />
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <label class="text-sm text-gray-500 dark:text-gray-400">Proposições (mínimo 1)</label>
+              <span class="text-xs text-gray-400">Informe 1 a 3 mapeamentos (Letra = descrição)</span>
+            </div>
+            <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
+              <input class="prop-input px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-gray-600" placeholder="X = descrição" />
+              <input class="prop-input px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-gray-600" placeholder="Y = descrição" />
+              <input class="prop-input px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-gray-600" placeholder="Z = descrição" />
+            </div>
           </div>
         </div>
 
@@ -156,7 +162,7 @@
     const statusEl = document.getElementById("status");
     const modeNlToCpc = document.getElementById("modeNlToCpc");
     const modeCpcToNl = document.getElementById("modeCpcToNl");
-    const propMapping = document.getElementById("propMapping");
+    const propInputs = Array.from(document.querySelectorAll('.prop-input'));
     const clearHistoryBtn = document.getElementById("clearHistoryBtn");
     const historyList = document.getElementById("historyList");
     const historyListMobile = document.getElementById("historyListMobile");
@@ -235,11 +241,12 @@
     }
 
     function buildDefinitions() {
-      const raw = propMapping.value.trim();
-      if (!raw) return '';
-      const entries = raw.split(/[;\n]+/)
-        .map(item => normalizeMappingEntry(item))
+      const entries = propInputs
+        .map(input => normalizeMappingEntry(input.value))
         .filter(Boolean);
+      if (!entries.length) {
+        throw new Error('Informe pelo menos uma proposição (campo obrigatório).');
+      }
       return entries.join('; ');
     }
 
@@ -249,10 +256,10 @@
       const defs = buildDefinitions();
       if (currentMode === 'nl_para_cpc') {
         const prompt = `Transforme para o CPC: ${text}`;
-        return defs ? `${defs}; ${prompt}` : prompt;
+        return `${defs}; ${prompt}`;
       }
       const prompt = `transforme para linguagem natural: ${text}`;
-      return defs ? `${defs}; ${prompt}` : prompt;
+      return `${defs}; ${prompt}`;
     }
 
     async function callBackend(question) {
@@ -304,8 +311,17 @@
       setTimeout(()=>copyBtn.textContent="📋 Copiar resultado",1500);
     };
     useSampleBtn.onclick = () => {
-      if (currentMode === "nl_para_cpc") entrada.value = "Se chover, então a grama ficará molhada.";
-      else entrada.value = "(P ∧ Q) → R";
+      if (currentMode === "nl_para_cpc") {
+        entrada.value = "Se Rafael é filósofo e João é médico, então Lucas é doutor.";
+        propInputs[0].value = "X = Rafael é filósofo";
+        propInputs[1].value = "J = João é médico";
+        propInputs[2].value = "Y = Lucas é doutor";
+      } else {
+        entrada.value = "(P^Q)->R";
+        propInputs[0].value = "P = João estuda";
+        propInputs[1].value = "Q = Maria trabalha";
+        propInputs[2].value = "R = Pedro passa";
+      }
     };
   </script>
 </body>
